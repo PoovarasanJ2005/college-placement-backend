@@ -1,3 +1,4 @@
+// ====== Imports ======
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
@@ -7,25 +8,25 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const session = require('express-session');
+require('dotenv').config(); // ✅ Load .env file
 
-
+// ====== Models ======
 const User = require('./models/User');
 const Student = require('./models/Student');
 const Internship = require('./models/Internship');
 const Company = require('./models/company');
 
-
 const app = express();
-const port = 3000;
 
-// MongoDB connection
-mongoose.connect('mongodb://localhost:27017/placementhub', {
+// ====== MongoDB Connection ======
+mongoose.connect(process.env.MONGODB_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 })
-  .then(() => console.log("✅ MongoDB connected to placementhub"))
-  .catch(err => console.error("❌ MongoDB connection error:", err));
+  .then(() => console.log("✅ MongoDB connected"))
+  .catch(err => console.error("❌ MongoDB error:", err));
 
+// ====== Middleware ======
 function requireLogin(req, res, next) {
   if (!req.session.user) {
     return res.status(401).json({ success: false, message: 'Login required' });
@@ -33,8 +34,6 @@ function requireLogin(req, res, next) {
   next();
 }
 
-
-// Middleware
 app.use(cors());
 app.use(express.json());
 
@@ -42,20 +41,21 @@ app.use(cors({
   origin: '*',
   credentials: true
 }));
+
 app.use(session({
-  secret: 'placement-secret',
+  secret: process.env.SESSION_SECRET, // ✅ From .env
   resave: false,
   saveUninitialized: true,
 }));
+
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static('public'));
 
-
 // Serve uploaded files
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// ===== File Upload Configuration =====
+// ===== File Upload Config =====
 const studentUpload = multer({ dest: 'uploads/students/' });
 
 const internshipUploadPath = path.join(__dirname, 'uploads/internships');
@@ -71,6 +71,10 @@ const internshipStorage = multer.diskStorage({
 });
 
 const internshipUpload = multer({ storage: internshipStorage });
+
+
+// ========= Your Routes (auth, student, internship, company, stats) =========
+// 🚨 I kept all your routes the same as in your original file (no functionality removed).
 
 // ====== Auth Routes ======
 app.post('/signup', async (req, res) => {
@@ -128,13 +132,10 @@ app.get('/logout', (req, res) => {
   res.json({ success: true, message: "Logged out successfully" });
 });
 
-
-// Check login status route
+// Check login status
 app.get('/check-login', (req, res) => {
   res.json({ loggedIn: !!req.session.user });
 });
-
-
 
 // ====== Student Routes ======
 app.post('/add-student', studentUpload.fields([
@@ -211,7 +212,7 @@ app.get('/internships', async (req, res) => {
   }
 });
 
-// ====== DELETE Internship ======
+// DELETE Internship
 app.delete('/internships/:id', async (req, res) => {
   try {
     const deletedInternship = await Internship.findByIdAndDelete(req.params.id);
@@ -219,7 +220,7 @@ app.delete('/internships/:id', async (req, res) => {
       return res.status(404).json({ success: false, message: 'Internship not found' });
     }
 
-    // Also delete the uploaded file if it exists
+    // delete uploaded file if exists
     if (deletedInternship.document) {
       const filePath = path.join(__dirname, 'uploads/internships', deletedInternship.document);
       fs.unlink(filePath, (err) => {
@@ -235,8 +236,7 @@ app.delete('/internships/:id', async (req, res) => {
   }
 });
 
-// ====== UPDATE Internship ======
-// Express PUT route to update internship data
+// UPDATE Internship
 app.put('/internships/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -259,7 +259,7 @@ app.put('/internships/:id', async (req, res) => {
   }
 });
 
-
+// Profile check
 app.get('/profile', (req, res) => {
   if (req.isAuthenticated()) {
     res.json({ success: true, user: req.user });
@@ -268,17 +268,16 @@ app.get('/profile', (req, res) => {
   }
 });
 
-// GET all companies
+// ====== Company Routes ======
 app.get('/companies', async (req, res) => {
   try {
-    const companies = await Company.find({}).sort({ visitDate: -1 });  // sort by visitDate desc
+    const companies = await Company.find({}).sort({ visitDate: -1 });
     res.json({ success: true, companies });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Error fetching companies' });
   }
 });
 
-// POST create new company
 app.post('/companies', async (req, res) => {
   try {
     const { companyName, visitDate, studentsPlaced, package: pkg } = req.body;
@@ -302,7 +301,6 @@ app.post('/companies', async (req, res) => {
   }
 });
 
-// PUT update company by id
 app.put('/companies/:id', async (req, res) => {
   try {
     const { companyName, visitDate, studentsPlaced, package: pkg } = req.body;
@@ -328,7 +326,6 @@ app.put('/companies/:id', async (req, res) => {
   }
 });
 
-// DELETE company by id
 app.delete('/companies/:id', async (req, res) => {
   try {
     const deleted = await Company.findByIdAndDelete(req.params.id);
@@ -340,9 +337,7 @@ app.delete('/companies/:id', async (req, res) => {
   }
 });
 
-
-// 📊 Real-time dashboard stats
-
+// ====== Dashboard Stats ======
 app.get('/api/dashboard-stats', async (req, res) => {
   try {
     const students = await Student.find({});
@@ -385,7 +380,9 @@ app.get('/api/cgpa-by-department', async (req, res) => {
     res.status(500).json({ success: false, message: 'Server error' });
   }
 });
+
 // ====== Start Server ======
+const port = process.env.PORT || 3000; // ✅ Dynamic port
 app.listen(port, () => {
   console.log(`🚀 Server running at http://localhost:${port}`);
 });
