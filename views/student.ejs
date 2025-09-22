@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Placement Portal - Students List</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h1 class="sidebar-title">Placement Portal</h1>
+        </div>
+        
+        <nav class="sidebar-nav">
+            <ul class="nav-list">
+                <li class="nav-item">
+                    <a href="main dashboard.html" class="nav-link "><i class="fas fa-home"></i> Home</a>
+                </li>
+                <li class="nav-item">
+                    <a href="student.html" class="nav-link active"><i class="fas fa-users"></i> Students</a>
+                </li>
+                <!-- Add more navigation items as needed -->
+            </ul>
+        </nav>
+    </div>
+
+    <div class="main-content">
+        <div class="content-wrapper">
+            <h1 class="page-title">STUDENT'S LIST</h1>
+            <div class="breadcrumb"><a href="main dashboard.html">Home</a><span>Students</span></div>
+
+            <div class="content-header">
+                <h2 class="student-count">NO.OF STUDENT'S (<%= students.length %>)</h2>
+                <div class="header-actions">
+                    <div class="search-container">
+                        <form action="/students" method="get">
+                            <input type="text" name="search" placeholder="Search Student" class="search-input" value="<%= searchQuery %>" />
+                            <i class="fas fa-search search-icon"></i>
+                        </form>
+                    </div>
+                    <button class="add-button" onclick="location.href='add student.html'">ADD NEW STUDENT <i class="fas fa-plus"></i></button>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <div class="table-header">
+                    <div>NAME</div>
+                    <div>BRANCH</div>
+                    <div>SECTION</div>
+                    <div>MOBILE</div>
+                    <div>CGPA</div>
+                    <div>MORE INFO</div>
+                </div>
+
+                <div class="table-body">
+                    <% students.forEach(student => { %>
+                        <div class="table-row">
+                            <div class="student-info">
+                                <div class="student-avatar"><%= student.name.slice(0, 2).toUpperCase() %></div>
+                                <div class="student-details">
+                                    <div class="student-name"><%= student.name %></div>
+                                    <div class="student-email"><%= student.email %></div>
+                                </div>
+                            </div>
+                            <div class="table-cell"><%= student.branch %></div>
+                            <div class="table-cell"><%= student.section %></div>
+                            <div class="table-cell"><%= student.mobile %></div>
+                            <div class="table-cell"><div class="cgpa-badge"><%= student.cgpa %></div></div>
+                            <div class="table-cell"><button class="info-button"><i class="fas fa-info"></i></button></div>
+                        </div>
+                    <% }) %>
+                </div>
+            </div>
+
+            <!-- Pagination -->
+            <div class="pagination">
+                <% if (currentPage > 1) { %>
+                    <a href="/students?page=<%= currentPage - 1 %>&search=<%= searchQuery %>">Previous</a>
+                <% } %>
+
+                <% for (let i = 1; i <= totalPages; i++) { %>
+                    <a href="/students?page=<%= i %>&search=<%= searchQuery %>" class="<%= i === currentPage ? 'active' : '' %>"><%= i %></a>
+                <% } %>
+
+                <% if (currentPage < totalPages) { %>
+                    <a href="/students?page=<%= currentPage + 1 %>&search=<%= searchQuery %>">Next</a>
+                <% } %>
+            </div>
+        </div>
+    </div>
+
+    <script src="/theme.js"></script>
+</body>
+</html>
